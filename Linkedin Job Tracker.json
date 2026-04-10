@@ -1,0 +1,502 @@
+{
+  "name": "Linkedin Job Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        224
+      ],
+      "id": "c944ceb1-94fb-4667-8243-4c082cc9c3ee",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "99307d63-d805-4d34-819f-6aed0816dc41",
+      "name": "When chat message received",
+      "webhookId": "5d468d6e-e18e-4349-aee6-ff7b2375248b"
+    },
+    {
+      "parameters": {
+        "actorId": {
+          "__rl": true,
+          "value": "BHzefUZlZRKWxkTck",
+          "mode": "list",
+          "cachedResultName": "🔥 LinkedIn Jobs Scraper (bebity/linkedin-jobs-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/BHzefUZlZRKWxkTck/input"
+        },
+        "customBody": "={\n  \"title\": \"{{ $json.chatInput }}\",\n  \"location\": \"New York\",\n  \"datePosted\": \"past 3 days\",\n  \"rows\": 20\n}"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "cae8b994-5554-4b49-a01e-dbb95f07352d",
+      "name": "Run an Actor",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}",
+        "offset": 0,
+        "options": {}
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "ada7ed41-c29a-406c-8ca1-a66131ade994",
+      "name": "Get dataset items",
+      "credentials": {
+        "apifyApi": {
+          "id": "Am8MfBFNKzxJWZ7k",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "62558695-150b-4f3c-905c-fd13721b0da6",
+              "name": "date",
+              "value": "={{ $json.publishedAt }}",
+              "type": "string"
+            },
+            {
+              "id": "8b391b74-39d2-4ae5-9d66-51c9bb8f0556",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "8e4ca0ec-b20c-4639-8842-db62fd800b01",
+              "name": "company",
+              "value": "={{ $json.companyUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "b9f6b5db-8b9b-4c48-a847-08d6593f876f",
+              "name": "link",
+              "value": "={{ $json.jobUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "19f363a2-9ec3-4a13-a469-5af5457126b4",
+              "name": "location",
+              "value": "={{ $json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "be3a3e3b-bea5-476f-bb7d-c26ed15aa77e",
+              "name": "description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "473e33b1-3589-44af-85be-0a899ccedf00",
+              "name": "applicationsCount",
+              "value": "={{ $json.applicationsCount }}",
+              "type": "string"
+            },
+            {
+              "id": "56469bf7-ff59-4f06-b1a6-88647ed8a3fd",
+              "name": "type",
+              "value": "={{ $json.workType }}",
+              "type": "string"
+            },
+            {
+              "id": "82088470-3f6a-40f7-a944-b901323da37b",
+              "name": "sector",
+              "value": "={{ $json.sector }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "cb2b50b5-ccf8-4517-a7d3-d00715676b21",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Role\n你是一位拥有自主决策能力的资深猎头专家。你的目标是利用工具获取简历，并对输入的岗位列表进行批量匹配分析。\n\n## Input Context\n- 你现在收到了一份包含 20 个岗位的数组，字段名为 `jobList`。\n\n## Task Instructions (必须按此顺序执行)\n1. **获取简历**：\n   - 立即调用 `Google Drive` 工具。\n   - 找到并读取我的简历文件内容。注意：你只需要读取【一次】简历即可，将其内容作为本次任务的全局参考标准。\n\n2. **批量思考与对比**：\n   - 将简历内容与20 个岗位的 {{ $json.description }}中的逐一对比。\n   - 深度分析每个岗位的{{ $json.description }}是否符合候选人的背景和经验。\n\n3. **数据清洗与精简（关键步骤）**：\n   - **智能提炼**：对于每个岗位，你必须读完原始{{ $json.description }}后，将20个岗位的description分别精简为【50字以内】的核心工作内容。\n   - 丢弃所有冗余的福利介绍、公司背景等非核心信息，只保留岗位最本质的技术栈和职责。\n\n4. **数据处理与写入**：\n   - 为每个岗位计算匹配分（0-100）并撰写理由（reason）。\n   - **核心要求**：你必须将 20 个岗位处理为 20 行独立的数据。\n   - 调用 `Google Sheets` 工具，将这 20 行结果依次（或批量）写入表格。\n\n## Output Data Fields (严格对应表头)\n每一行写入必须包含：\ndate, title, company, link, location, description(提炼至50字), applicationsCount, type, sector, score, reason\n\n## Constraints\n- **禁止向用户索要信息**：简历在 Drive 里，岗位在输入数据里，请自行处理。\n- **能效优先**：尽可能减少对 Google Drive 的重复调用，一次读取，全局使用。\n- **严谨打分**：分数要体现出简历与岗位的真实匹配度差异。",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "155dcb8d-7ace-4c4b-9e25-b307ca57b6ec",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1PvFhBKoyF3YpoHPNJXLM4Ppx4aRafFwuIEyO86Mt0mY",
+          "mode": "list",
+          "cachedResultName": "Fegga's Internship Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1PvFhBKoyF3YpoHPNJXLM4Ppx4aRafFwuIEyO86Mt0mY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "工作表1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1PvFhBKoyF3YpoHPNJXLM4Ppx4aRafFwuIEyO86Mt0mY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('date', ``, 'string') }}",
+            "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', ``, 'string') }}",
+            "company": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('company', ``, 'string') }}",
+            "link": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('link', ``, 'string') }}",
+            "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('location', ``, 'string') }}",
+            "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('description', ``, 'string') }}",
+            "applicationsCount": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('applicationsCount', ``, 'string') }}",
+            "type": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('type', ``, 'string') }}",
+            "sector": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('sector', ``, 'string') }}",
+            "reason": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('reason', ``, 'string') }}",
+            "alumni": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('alumni', ``, 'string') }}",
+            "score": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('score', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "applicationsCount",
+              "displayName": "applicationsCount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alumni",
+              "displayName": "alumni",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        224
+      ],
+      "id": "eb9cf4a9-1d52-4f2b-b1df-6b6f0788657e",
+      "name": "Append row in sheet in Google Sheets"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "title"
+            },
+            {
+              "fieldToAggregate": "company"
+            },
+            {
+              "fieldToAggregate": "link"
+            },
+            {
+              "fieldToAggregate": "description"
+            },
+            {
+              "fieldToAggregate": "location"
+            },
+            {
+              "fieldToAggregate": "applicationsCount"
+            },
+            {
+              "fieldToAggregate": "type"
+            },
+            {
+              "fieldToAggregate": "sector"
+            },
+            {
+              "fieldToAggregate": "date"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        896,
+        0
+      ],
+      "id": "455b393b-a86e-4596-841d-46eb9e41139c",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1xSRYypdXILwhicdv6Xi3UCMDFpFn8Zuq04_xz6Uv8fk",
+          "mode": "list",
+          "cachedResultName": "Fegga Xu-resume",
+          "cachedResultUrl": "https://docs.google.com/document/d/1xSRYypdXILwhicdv6Xi3UCMDFpFn8Zuq04_xz6Uv8fk/edit?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTool",
+      "typeVersion": 3,
+      "position": [
+        1376,
+        224
+      ],
+      "id": "b1c2f1f4-93bf-41dc-9773-22f2abfaccec",
+      "name": "Download file in Google Drive"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor": {
+      "main": [
+        [
+          {
+            "node": "Get dataset items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get dataset items": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file in Google Drive": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d26943df-c0fd-4e5c-94ed-368a5a6b2478",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d9dfc3ac990924da6f4a190ebaf7787e9c5de57764eae850bc37403c1623d2e"
+  },
+  "id": "cntl9Ftz3mam0ozO",
+  "tags": []
+}
